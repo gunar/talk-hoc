@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pure & Higher Order Components</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+    <script src="remark-latest.min.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Pure & Higher Order Components
+
+Gunar C. Gessner ([@gunar](https://twitter.com/gunar))
+
+---
+
+class: center, middle
+# Pure Components
+
+???
+
+React 0.14 introduziu a possibilidade de usar funcoes puras como componentes.
+---
+# Pure Function
+
+1. Dado o mesmo input, sempre retorna o mesmo output
+    ```
+    Math.max(5, 10) === Math.max(5, 10)
+    ```
+--
+2. Nao produz side-effects
+    ```
+    function deleteFile(fileId) {
+      api.post({ action: 'delete', fileId }) // side-effect
+    } // returns nothing
+    ```
+???
+- Note que Item 2 nao retorna nada.
+--
+3. Nao depende de estado mutável externo
+    ```
+    // "counter" is a global mutable state
+    function incrementCounter() {
+      counter = counter + 1
+    }
+
+    // cloud be rewritten as the following pure function
+    function incrementCounter(counter) {
+      return counter + 1
+    }
+    ```
+--
+.footnote.right[Source: Eric Elliott (@_ericelliott)]
+
+???
+Vou só dar uma geral, podemos conversar depois sobre os benefícios de usar
+funcoes puras
+
+non-determinism = parallel programming + mutable state
+
+---
+# Pure Components
+
+```
+const Welcome = props => (<h1>Hello, {props.name}</h1>)
+
+const App = () => (
+  <div>
+    <Welcome name="André" />
+    <Welcome name="Matheus" />
+    <Welcome name="Gunar" />
+  </div>
+)
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('root')
+);
+```
+
+[Codepen](http://codepen.io/gunar/pen/vmJLJL)
+
+---
+# Pure Components
+
+
+## Unit testing
+
+## Props
+## Context
+
+
+
+---
+
+class: center, middle
+# Higher Order Components
+
+---
+
+# Higher Order Components
+
+## HOC enables
+- Code reuse, logic and bootstrap abstraction TODO
+- Render Highjacking TODO
+- State abstraction and manipulation TODO
+- Props manipulation
+
+WHAT IS A HIGHER ORDER COMPONENT?
+A higher-order component is just a function that takes an existing component and returns another component that wraps it
+
+It’s as simple as that.
+
+Side note: Some of you will have heard of higher order functions before, which is defined (loosely) as “a function which takes in a function parameter or returns a function”. Because React components are really just functions, higher order components are in fact just higher order functions.
+
+---
+
+# Higher Order Components
+
+## Difference from Parent Componets
+
+```
+const Parent = props => <div>{props.children}</div>
+ReactDOM.render(
+  <Parent>
+    // children
+  </Parent>,
+  document.getElementById('root')
+);
+```
+
+[CodePen](https://codepen.io/gunar/pen/Njwbrw?editors=0010)
+
+--
+
+## Parent Components can not
+
+- Render Highjacking (II) TODO
+- Manipulate inner props (II) TODO
+- Abstract state
+    You won't be able to access the state of the Parent from outside, unless
+    by explicitly creating hooks for it
+- Wrap with new React Elements
+    This might be the single use case where Parent Components feel more ergonomic than HOC. HOCs can do this too.
+
+If you can do it with Parent Components you should because it’s much less hacky than HOCs, but as the list above states they are less flexible than HOCs.
+
+---
+
+TODO:
+
+Try and create composition with HOC and with Parent Compoentns.
+
+TODO: WIP https://codepen.io/gunar/pen/dWZOdX?editors=0010
+
+---
+
+# Higher Order Components
+
+## There are two ways to implement
+
+1. Props Proxy
+
+2. Inheritance Inversion
+
+---
+
+# Props Proxy
+
+```
+const ppHOC = WrappedComponent =>
+  props =>
+    <WrappedComponent {...props}/>
+```
+
+## Example
+
+Codepen? TODO
+
+--
+
+## What can be done with Props Proxy?
+
+- Manipulating props
+- Accessing the instance via Refs
+- Abstracting State
+- Wrapping the WrappedComponent with other elements
+
+???
+
+As propriedades passam diretamente, ou seja, Props Proxy.
+
+---
+
+# Props Proxy
+
+## Manipulating Props
+
+```
+const currentLoggedInUser = null
+
+const loggedState = WrappedComponent => props => 
+  <WrappedComponent {...props} user={currentLoggedInUser}/>
+
+const dumbComponent = ({ user, color = 'red' } = {}) => {
+  if (user) return (<div>Welcome, {user}!</div>)
+  else return (<button onClick="...">Log in</button>)
+}
+const LoginButton = loggedState(dumbComponent)
+
+const App = () => (
+  <div>
+    <LoginButton color="blue"/>
+  </div>
+)
+    
+ReactDOM.render(
+  <App/>,
+  document.getElementById('root')
+)
+```
+
+[CodePen](https://codepen.io/gunar/pen/wdPogr?editors=0010)
+
+???
+
+- Namespace your Higher Order props
+
+---
+
+# Props Proxy
+## Accessing the instance via Refs
+
+TODO
+
+---
+
+# Props Proxy
+## Abstracting State
+
+TODO
+
+---
+
+# Props Proxy
+## Wrapping the WrappedComponent with other elements
+
+Example: Wrapping for styling purposes
+
+```
+const centered = WrappedComponent => props =>
+  <div style={{text-align: 'center'}}>
+    <WrappedComponent {...props}>
+  </div>
+
+const Label = props => <div>Dumb label</div>
+const CenteredLabel = centered(Label)
+
+ReactDOM.render(
+  <CenteredLabel />,
+  document.getElementById('root')
+);
+```
+
+--
+
+You can do this with regular Parent Components but you have more flexibility
+with HOCs.
+
+TODO: See Appendix B
+
+---
+
+# Inheritance Inversion
+
+TODO
+
+I found out that II don't work on stateless components, so you'd have to change your functional component to a class based component.
+
+And to make everything work just as fine, don't forget to return super.render() in the HOC. I have it working here: https://jsfiddle.net/ooade/qaudnzk6/
+
+---
+
+# Naming
+
+```
+function getDisplayName(WrappedComponent) {
+  return WrappedComponent.displayName || 
+         WrappedComponent.name || 
+         ‘Component’
+}
+
+HOC.displayName = `HOC(${getDisplayName(WrappedComponent)})`
+```
+
+recompose does this
+
+---
+
+# Case Studies
+
+## React-Redux
+
+`connect()`
+
+## Radium
+
+Uses HOC for styling
+
+---
+
+https://facebook.github.io/react/docs/higher-order-components.html
+
+Now we will review what Parent Components can and cannot do in contrast of HOCs plus some important details:
+
+https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e
+
+redux uses HOC
+
+compose() multiple hoc
+
+https://github.com/acdlite/recompose/
+
+
+examples in http://blog.scottlogic.com/2016/09/20/the-power-of-the-higher-order.html
+
+    </textarea>
+    <script type="text/javascript">
+remark.create({
+  highlightLanguage: 'javascript',
+  highlightLines: true,
+})
+      window.setTimeout(() => window.location.reload(), 1000)
+    </script>
+  </body>
+</html>
